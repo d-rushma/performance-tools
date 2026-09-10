@@ -1,12 +1,26 @@
 # Copyright © 2024 Intel Corporation. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-.PHONY: build-benchmark-docker docs docs-builder-image build-docs serve-docs clean
+.PHONY: build-benchmark-docker docs docs-builder-image build-docs serve-docs clean \
+        install-native start-native stop-native run-api-native
 
 MKDOCS_IMAGE ?= asc-mkdocs
+RESULTS_DIR ?= /tmp/results
 
 build-benchmark-docker:
 	cd docker && $(MAKE) build-all
+
+install-native:
+	bash live-metrics/native/install_deps.sh
+
+start-native: install-native
+	RESULTS_DIR=$(RESULTS_DIR) bash live-metrics/native/start_collectors.sh
+
+stop-native:
+	RESULTS_DIR=$(RESULTS_DIR) bash live-metrics/native/stop_collectors.sh
+
+run-api-native:
+	RESULTS_DIR=$(RESULTS_DIR) python3 live-metrics/metrics_api.py
 
 docs: clean-docs
 	mkdocs build
