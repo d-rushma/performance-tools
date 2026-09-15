@@ -8,13 +8,11 @@
 Parses the metric files written by docker/scripts/collect_platform.sh,
 collect_gpu.sh and collect_npu.py into JSON time series.
 
-This module is deployment-mode agnostic: it only ever reads files under
-$RESULTS_DIR. It does not care whether those files were produced by the
-collectors running inside the Docker container (existing behavior, see
-docker/supervisord.conf) or by live-metrics/native/start_collectors.sh
-(new, bare-metal behavior). All paths are re-read from the environment on
-every call (not cached at import time) so a long-lived process can serve
-multiple sessions/RESULTS_DIR values over its lifetime.
+Used by metrics_api.py, served from inside the Docker image (see
+docker/supervisord.conf's [program:metrics_api]). Only ever reads files
+under $RESULTS_DIR; paths are re-read from the environment on every call
+(not cached at import time) so a long-lived process can serve multiple
+sessions/RESULTS_DIR values over its lifetime.
 """
 
 import csv
@@ -132,6 +130,38 @@ def build_npu_series() -> List[List]:
     return series
 
 
+def _load_qmassa_json(path: str) -> Dict[str, Any]:
+    """
+    qmassa's on-disk format changed between versions: v1.0 wrote a single
+    JSON document; v1.3+ (the version docker/Dockerfile pins) writes JSONL
+    instead -- one JSON object per line (a version line, a config line,
+    then one state line per sample). Try the simple case first, fall back
+    to JSONL -- mirrors
+    benchmark-scripts/parse_qmassa_metrics_to_json.py::load_qmassa_json.
+    """
+    with open(path) as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            pass
+
+    states = []
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(obj, dict) and "devs_state" in obj:
+                states.append(obj)
+    if not states:
+        raise ValueError(f"no qmassa state data found in {path}")
+    return {"states": states}
+
+
 def build_gpu_series() -> List[List]:
     """
     Parse the qmassa tool-generated JSON (docker/scripts/collect_gpu.sh output):
@@ -155,10 +185,9 @@ def build_gpu_series() -> List[List]:
     try:
         if os.path.getsize(latest) > _GPU_MAX_JSON_BYTES:
             return []
-        with open(latest) as f:
-            data = json.load(f)
-    except (OSError, json.JSONDecodeError):
-        return []  # qmassa was mid-write -- serve nothing rather than a partial parse
+        data = _load_qmassa_json(latest)
+    except (OSError, ValueError):
+        return []  # qmassa was mid-write, or wrote neither known format
 
     states = data.get("states") or []
     if not isinstance(states, list) or not states:

@@ -1,7 +1,6 @@
 #!/bin/bash
 #
 # RESULTS_DIR defaults to /tmp/results, matching the previous hardcoded path
-# exactly -- Docker-mode callers that don't set it see no behavior change.
 RESULTS_DIR="${RESULTS_DIR:-/tmp/results}"
 mkdir -p "${RESULTS_DIR}"
 
@@ -11,13 +10,6 @@ mkdir -p "${RESULTS_DIR}"
 # deleting its own output file first, so a 24/7 live dashboard doesn't
 # eventually OOM on an ever-growing JSON file (qmassa never rotates it).
 QMASSA_CYCLE_SECONDS="${QMASSA_CYCLE_SECONDS:-0}"
-
-# chown only matters inside the container running as root; skip rather than
-# fail when this script runs natively as a normal user (see install_deps.sh).
-_maybe_chown() {
-    [ "$(id -u)" = "0" ] && chown 1000:1000 "$1" 2>/dev/null
-    return 0
-}
 
 # Get all lines containing pci: and both device= and card=
 mapfile -t pci_devices < <(
@@ -61,7 +53,7 @@ for device_line in "${pci_devices[@]}"; do
 
         output_file="${RESULTS_DIR}/qmassa${card_num}-${device_id}-${driver}-tool-generated.json"
         touch "$output_file"
-        _maybe_chown "$output_file"
+        chown 1000:1000 "$output_file"
 
         echo "Starting igt capture to $output_file"
         if [ "$QMASSA_CYCLE_SECONDS" -gt 0 ] 2>/dev/null; then
@@ -73,7 +65,7 @@ for device_line in "${pci_devices[@]}"; do
                     -d $pci_info -g -x -t "$output_file" 2>> "${RESULTS_DIR}/qmassa_error.log"
                 rm -f "$output_file"
                 touch "$output_file"
-                _maybe_chown "$output_file"
+                chown 1000:1000 "$output_file"
             done
         else
             # Legacy/default behavior: single unbounded invocation, matching

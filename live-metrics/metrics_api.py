@@ -7,11 +7,10 @@
 """
 Live metrics HTTP API for performance-tools.
 
-Run this exactly the same way regardless of how the collectors
-(collect_platform.sh / collect_gpu.sh / collect_npu.py) were started --
-by Docker + supervisord (see docker/supervisord.conf), or natively via
-live-metrics/native/start_collectors.sh. This process only ever reads
-$RESULTS_DIR; it has no knowledge of, or dependency on, Docker.
+Served inside the Docker image alongside the collectors (see
+docker/supervisord.conf's [program:metrics_api]); this process only ever
+reads $RESULTS_DIR, it has no other dependency on how the collectors were
+started.
 
 Endpoints
 ---------

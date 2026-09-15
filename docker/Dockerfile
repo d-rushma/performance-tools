@@ -57,10 +57,9 @@ COPY docker/supervisord.conf supervisord.conf
 RUN chmod +x /scripts/*.sh
 
 # live-metrics: opt-in live HTTP API served alongside the existing collectors.
-# Additive only -- existing consumers that don't need it pay only the cost of
-# a small pip install; nothing above this line changes behavior.
 COPY live-metrics/ /live-metrics/
-RUN pip install --no-cache-dir --break-system-packages -r /live-metrics/requirements.txt
+# --ignore-installed: fastapi pulls in a newer typing-extensions 
+RUN pip install --no-cache-dir --break-system-packages --ignore-installed -r /live-metrics/requirements.txt
 EXPOSE 9000
 
 CMD ["/usr/bin/supervisord", "-c", "/supervisord.conf"]
