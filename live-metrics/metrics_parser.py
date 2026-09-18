@@ -26,8 +26,15 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-_GPU_MAX_JSON_BYTES = int(float(os.getenv("METRICS_GPU_MAX_JSON_MB", "256")) * 1024 * 1024)
-_GPU_MAX_POINTS = int(os.getenv("METRICS_GPU_MAX_POINTS", "300"))
+try:
+    _GPU_MAX_JSON_BYTES = int(float(os.getenv("METRICS_GPU_MAX_JSON_MB", "256")) * 1024 * 1024)
+except (TypeError, ValueError):
+    _GPU_MAX_JSON_BYTES = 256 * 1024 * 1024
+
+try:
+    _GPU_MAX_POINTS = int(os.getenv("METRICS_GPU_MAX_POINTS", "300"))
+except (TypeError, ValueError):
+    _GPU_MAX_POINTS = 300
 
 
 def _results_dir() -> Path:
