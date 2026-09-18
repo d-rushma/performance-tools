@@ -48,6 +48,6 @@ directly on the host once the container is up — no port publishing needed.
 |---|---|
 | `GET /health` | `{"status": "ok"}` |
 | `GET /metrics` | `{"cpu_utilization": [...], "gpu_utilization": [...], "npu_utilization": [...], "memory": [...], "power": [...]}` |
-| `GET /platform-info` | `{"Processor", "iGPU", "NPU", "Memory", "Storage"}` |
+| `GET /platform-info` | `{"Processor": "...", "iGPU": "...", "NPU": "...", "Memory": "...", "Storage": "..."}` |
 | `GET /memory` | Latest single memory snapshot |
 | `GET /device-config` | `{}` unless `DEVICE_CONFIG_PATH` is set (see above) |

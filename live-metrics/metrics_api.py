@@ -37,7 +37,11 @@ app = FastAPI(title="performance-tools live-metrics")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("METRICS_CORS_ORIGINS", "*").split(","),
+    allow_origins=[
+         o.strip()
+         for o in os.getenv("METRICS_CORS_ORIGINS", "*").split(",")
+         if o.strip()
+     ],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
